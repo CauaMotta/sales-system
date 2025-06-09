@@ -1,105 +1,179 @@
 package br.com.ocauamotta.dao.generic;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import br.com.ocauamotta.dao.jdbc.ConnectionFactory;
+import br.com.ocauamotta.domain.Persistent;
 
-import annotation.KeyType;
-import br.com.ocauamotta.dao.Persistent;
-import br.com.ocauamotta.exceptions.KeyTypeNotFoundExcepction;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-public abstract class GenericDAO<T extends Persistent, E extends Serializable> implements IGenericDAO<T,E> {
+public abstract class GenericDAO<T extends Persistent> implements IGenericDAO<T> {
 
-    private SingletonMap singletonMap;
-
-    public abstract Class<T> getClassType();
-
-    public abstract void dataUpdate(T entity, T entityRegistered);
-
-    public GenericDAO() {
-        this.singletonMap = SingletonMap.getInstance();
+    @Override
+    public Integer register(T entity) throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlInsert();
+            stm = connection.prepareStatement(sql);
+            addInsertParameters(stm, entity);
+            return stm.executeUpdate();
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, null);
+        }
     }
 
-    public E getKey(T entity) throws KeyTypeNotFoundExcepction {
-        Field[] fields = entity.getClass().getDeclaredFields();
-        E returnValue = null;
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(KeyType.class)) {
-                KeyType keyType = field.getAnnotation(KeyType.class);
-                String methodName = keyType.value();
-                try {
-                    Method method = entity.getClass().getMethod(methodName);
-                    returnValue = (E) method.invoke(entity);
-                    return returnValue;
-                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
-                    throw new KeyTypeNotFoundExcepction("Chave principal do objeto " + entity.getClass() + " não encontrada.", e);
-                }
+    protected abstract void addInsertParameters(PreparedStatement stm, T entity) throws SQLException;
+
+    protected abstract String getSqlInsert();
+
+    @Override
+    public Integer delete(T entity) throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlDelete();
+            stm = connection.prepareStatement(sql);
+            addDeleteParameters(stm, entity);
+            return stm.executeUpdate();
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, null);
+        }
+    }
+
+    protected abstract void addDeleteParameters(PreparedStatement stm, T entity) throws SQLException;
+
+    protected abstract String getSqlDelete();
+
+    @Override
+    public Integer update(T entity) throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlUpdate();
+            stm = connection.prepareStatement(sql);
+            addUpdateParameters(stm, entity);
+            return stm.executeUpdate();
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, null);
+        }
+    }
+
+    protected abstract void addUpdateParameters(PreparedStatement stm, T entity) throws SQLException;
+
+    protected abstract String getSqlUpdate();
+
+    @Override
+    public T search(Long id) throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        ResultSet resultSet = null;
+        T entity = null;
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlSelect();
+            stm = connection.prepareStatement(sql);
+            addSelectParameters(stm, id);
+            resultSet = stm.executeQuery();
+
+            if (resultSet.next()) {
+                entity = getEntity(resultSet);
             }
+
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, resultSet);
         }
-        if (returnValue == null) {
-            String err = "Chave principal do objeto " + entity.getClass() + " não encontrada.";
-            System.out.println("ERROR: " + err);
-            throw new KeyTypeNotFoundExcepction(err);
-        }
-        return null;
+        return entity;
     }
+
+    protected abstract T getEntity(ResultSet resultSet) throws SQLException;
+
+    protected abstract void addSelectParameters(PreparedStatement stm, Long id) throws SQLException;
+
+    protected abstract String getSqlSelect();
 
     @Override
-    public Boolean register(T entity) throws KeyTypeNotFoundExcepction {
-        Map<E, T> map = getMap();
-        E key = getKey(entity);
-        if (map.containsKey(key)) {
-            return false;
-        }
+    public T searchWithCode(Long code) throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        ResultSet resultSet = null;
+        T entity = null;
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlSelectWithCode();
+            stm = connection.prepareStatement(sql);
+            addSelectWithCodeParameters(stm, code);
+            resultSet = stm.executeQuery();
 
-        map.put(key, entity);
-        return true;
+            if (resultSet.next()) {
+                entity = getEntity(resultSet);
+            }
+
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, resultSet);
+        }
+        return entity;
     }
 
-    private Map<E, T> getMap() {
-        Map<E, T> map = (Map<E, T>) this.singletonMap.getMap().get(getClassType());
-        if (map == null) {
-            map = new HashMap<>();
-            this.singletonMap.getMap().put(getClassType(), map);
-        }
-        return map;
-    }
+    protected abstract void addSelectWithCodeParameters(PreparedStatement stm, Long code) throws SQLException;
+
+    protected abstract String getSqlSelectWithCode();
 
     @Override
-    public void delet(E value) {
-        Map<E, T> map = getMap();
-        T objectRegistered = map.get(value);
-        if (objectRegistered != null) {
-            map.remove(value, objectRegistered);
+    public List<T> searchAll() throws Exception {
+        Connection connection = null;
+        PreparedStatement stm = null;
+        ResultSet resultSet = null;
+        List<T> entities = new ArrayList<>();
+        try {
+            connection = ConnectionFactory.getConnection();
+            String sql = getSqlSelectAll();
+            stm = connection.prepareStatement(sql);
+            resultSet = stm.executeQuery();
+
+            while (resultSet.next()) {
+                entities.add(getEntity(resultSet));
+            }
+
+        } catch(Exception e) {
+            throw e;
+        } finally {
+            closeConnection(connection, stm, resultSet);
+        }
+        return entities;
+    }
+
+    protected abstract String getSqlSelectAll() throws SQLException;
+
+    private void closeConnection(Connection connection, PreparedStatement stm, ResultSet resultSet) {
+        try {
+            if (resultSet != null && !resultSet.isClosed()) {
+                resultSet.close();
+            }
+            if (stm != null && !stm.isClosed()) {
+                stm.close();
+            }
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
-
-    @Override
-    public void change(T entity) throws KeyTypeNotFoundExcepction {
-        Map<E, T> map = getMap();
-        E key = getKey(entity);
-        T objectRegistered = map.get(key);
-        if (objectRegistered != null) {
-            dataUpdate(entity, objectRegistered);
-        }
-    }
-
-    @Override
-    public T search(E valor) {
-        Map<E, T> map = getMap();
-        return map.get(valor);
-    }
-
-    @Override
-    public Collection<T> searchAll() {
-        Map<E, T> map = getMap();
-        return map.values();
-    }
-
-    public abstract void delet();
 }

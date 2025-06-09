@@ -1,19 +1,23 @@
 package br.com.ocauamotta.domain;
 
-import annotation.KeyType;
-import br.com.ocauamotta.dao.Persistent;
-
 public class Client implements Persistent {
 
+    private Long code;
     private String name;
-
-    @KeyType("getCpf")
     private Long cpf;
     private Long phone;
     private String address;
     private Integer number;
     private String city;
     private String state;
+
+    public Long getCode() {
+        return code;
+    }
+
+    public void setCode(Long code) {
+        this.code = code;
+    }
 
     public String getName() {
         return name;

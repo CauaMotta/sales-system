@@ -1,38 +1,28 @@
 package br.com.ocauamotta;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import br.com.ocauamotta.dao.ClientDAO;
-import br.com.ocauamotta.dao.IClientDAO;
-import br.com.ocauamotta.dao.IProductDAO;
 import br.com.ocauamotta.dao.ProductDAO;
-import br.com.ocauamotta.dao.ISaleDAO;
 import br.com.ocauamotta.dao.SaleDAO;
+import br.com.ocauamotta.dao.generic.IGenericDAO;
 import br.com.ocauamotta.domain.Client;
 import br.com.ocauamotta.domain.Product;
 import br.com.ocauamotta.domain.Sale;
-import br.com.ocauamotta.domain.Sale.Status;
-import br.com.ocauamotta.exceptions.KeyTypeNotFoundExcepction;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class SaleDAOTest {
 
-    private ISaleDAO saleDao;
+    private IGenericDAO<Sale> saleDao;
+    private IGenericDAO<Client> clientDao;
+    private IGenericDAO<Product> productDao;
 
-    private IClientDAO clientDao;
-
-    private IProductDAO productDao;
-
+    private Sale sale;
     private Client client;
-
     private Product product;
 
     public SaleDAOTest() {
@@ -42,215 +32,130 @@ public class SaleDAOTest {
     }
 
     @Before
-    public void init() throws KeyTypeNotFoundExcepction {
-        this.client = registerClient();
-        this.product = registerProduct("A1", BigDecimal.TEN);
-    }
-
-    @Test
-    public void search() throws KeyTypeNotFoundExcepction {
-        Sale sale = createSale("A1");
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-    }
-
-    @Test
-    public void register() throws KeyTypeNotFoundExcepction {
-        Sale sale = createSale("A2");
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(20)));
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void cancelSale() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A3";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        sale.setStatus(Status.CANCELADA);
-        saleDao.change(sale);
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        assertEquals(saleCode, saleConsulted.getCode());
-        assertEquals(Status.CANCELADA, saleConsulted.getStatus());
-    }
-
-    @Test
-    public void addSameProducts() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A4";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        saleConsulted.addProduct(product, 1);
-
-        assertTrue(sale.getTotalProducts() == 3);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(30)));
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void addDifferentProducts() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A5";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        Product prod = registerProduct(saleCode, BigDecimal.valueOf(50));
-        assertNotNull(prod);
-        assertEquals(saleCode, prod.getCode());
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        saleConsulted.addProduct(prod, 1);
-
-        assertTrue(sale.getTotalProducts() == 3);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(70)));
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void saveDifferentProduct() throws KeyTypeNotFoundExcepction {
-        Sale sale = createSale("A6");
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-
-        Boolean result1 = saleDao.register(sale);
-        assertFalse(result1);
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void removeProduct() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A7";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        Product prod = registerProduct(saleCode, BigDecimal.valueOf(50));
-        assertNotNull(prod);
-        assertEquals(saleCode, prod.getCode());
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        saleConsulted.addProduct(prod, 1);
-        assertTrue(sale.getTotalProducts() == 3);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(70)));
-
-
-        saleConsulted.removeProduct(prod, 1);
-        assertTrue(sale.getTotalProducts() == 2);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(20)));
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void removeAllProducts() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A8";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        Product prod = registerProduct(saleCode, BigDecimal.valueOf(50));
-        assertNotNull(prod);
-        assertEquals(saleCode, prod.getCode());
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        saleConsulted.addProduct(prod, 1);
-        assertTrue(sale.getTotalProducts() == 3);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(70)));
-
-
-        saleConsulted.removeAllProducts();
-        assertTrue(sale.getTotalProducts() == 0);
-        assertTrue(sale.getTotalValue().equals(BigDecimal.valueOf(0)));
-        assertTrue(sale.getStatus().equals(Status.INICIADA));
-    }
-
-    @Test
-    public void finalizeSale() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A9";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        saleDao.finalizeSale(sale);
-
-        Sale saleConsulted = saleDao.search(saleCode);
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-        assertEquals(sale.getStatus(), saleConsulted.getStatus());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void addProductInSaleFinished() throws KeyTypeNotFoundExcepction {
-        String saleCode = "A10";
-        Sale sale = createSale(saleCode);
-        Boolean result = saleDao.register(sale);
-        assertTrue(result);
-        assertNotNull(sale);
-        assertEquals(saleCode, sale.getCode());
-
-        saleDao.finalizeSale(sale);
-
-        Sale saleConsulted = saleDao.search(saleCode);
-
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-        assertEquals(sale.getStatus(), saleConsulted.getStatus());
-
-        saleConsulted.addProduct(this.product, 1);
-    }
-
-    private Product registerProduct(String code, BigDecimal value) throws KeyTypeNotFoundExcepction {
-        Product product = new Product();
-        product.setCode(code);
-        product.setName("Produto de Teste");
-        product.setDesc("Produto Teste");
-        product.setValue(value);
-
-        productDao.register(product);
-        return product;
-    }
-
-    private Client registerClient() throws KeyTypeNotFoundExcepction {
-        Client client = new Client();
+    public void init() throws Exception {
+        client = new Client();
         client.setCpf(11122233345L);
         client.setName("Nome de Teste");
-        client.setAddress("Rua JavaScript");
-        client.setNumber(12456);
-        client.setCity("Java");
-        client.setState("TS");
-        client.setPhone(12345678912L);
-
         clientDao.register(client);
-        return client;
+        client = clientDao.search(client.getCpf());
+
+        product = new Product();
+        product.setId(10L);
+        product.setName("Produto de Teste");
+        product.setPrice(2.83);
+        productDao.register(product);
+        product = productDao.search(product.getId());
+
+        sale = new Sale();
+        sale.setId(10L);
+        sale.setClient(client);
+        sale.setProduct(product);
+        sale.setQuantity(5);
     }
 
-    private Sale createSale(String code) {
-        Sale sale = new Sale();
-        sale.setCode(code);
-        sale.setSaleDate(Instant.now());
-        sale.setClient(this.client);
-        sale.setStatus(Status.INICIADA);
-        sale.addProduct(this.product, 2);
+    @After
+    public void cleanDb() throws Exception {
+        clientDao.delete(client);
+        productDao.delete(product);
+    }
 
-        return sale;
+    @Test
+    public void registerSaleTest() throws Exception {
+        Integer dbRes = saleDao.register(sale);
+        assertTrue(dbRes == 1);
+
+        sale = saleDao.search(sale.getId());
+        saleDao.delete(sale);
+    }
+
+    @Test
+    public void searchSaleTest() throws Exception{
+        saleDao.register(sale);
+
+        Sale saleConsulted = saleDao.search(sale.getId());
+        assertNotNull(saleConsulted);
+        assertEquals(sale.getId(), saleConsulted.getId());
+        assertEquals(sale.getClient().getCode(), saleConsulted.getClientCode());
+        assertEquals(sale.getProduct().getCode(), saleConsulted.getProductCode());
+        assertEquals(sale.getQuantity(), saleConsulted.getQuantity());
+
+        saleDao.delete(saleConsulted);
+    }
+
+    @Test
+    public void searchSaleWithCodeTest() throws Exception {
+        saleDao.register(sale);
+
+        Sale saleConsulted = saleDao.search(sale.getId());
+
+        saleConsulted = saleDao.searchWithCode(saleConsulted.getCode());
+        assertNotNull(saleConsulted);
+        assertEquals(sale.getId(), saleConsulted.getId());
+        assertEquals(sale.getClient().getCode(), saleConsulted.getClientCode());
+        assertEquals(sale.getProduct().getCode(), saleConsulted.getProductCode());
+        assertEquals(sale.getQuantity(), saleConsulted.getQuantity());
+
+        saleDao.delete(saleConsulted);
+    }
+
+    @Test
+    public void deleteSaleTest() throws Exception {
+        saleDao.register(sale);
+
+        sale = saleDao.search(sale.getId());
+        Integer dbRes = saleDao.delete(sale);
+        assertTrue(dbRes == 1);
+    }
+
+    @Test
+    public void updateSaleTest() throws Exception {
+        saleDao.register(sale);
+
+        Sale saleConsulted = saleDao.search(sale.getId());
+        assertNotNull(saleConsulted);
+        assertEquals(sale.getId(), saleConsulted.getId());
+        assertEquals(sale.getClient().getCode(), saleConsulted.getClientCode());
+        assertEquals(sale.getProduct().getCode(), saleConsulted.getProductCode());
+        assertEquals(sale.getQuantity(), saleConsulted.getQuantity());
+
+        sale = saleConsulted;
+        sale.setId(11L);
+        sale.setQuantity(10);
+        Integer dbRes = saleDao.update(sale);
+        assertTrue(dbRes == 1);
+
+        saleConsulted = saleDao.search(sale.getId());
+        assertNotNull(saleConsulted);
+        assertEquals(sale.getId(), saleConsulted.getId());
+        assertEquals(sale.getQuantity(), saleConsulted.getQuantity());
+
+        saleDao.delete(saleConsulted);
+    }
+
+    @Test
+    public void searchAllSalesTest() throws Exception{
+        Sale sale2 = new Sale();
+        sale2.setId(11L);
+        sale2.setClient(client);
+        sale2.setProduct(product);
+        sale2.setQuantity(7);
+
+        saleDao.register(sale);
+        saleDao.register(sale2);
+
+        List<Sale> list = saleDao.searchAll();
+        assertNotNull(list);
+        assertEquals(2, list.size());
+
+        int count = 0;
+        for (Sale sale : list) {
+            saleDao.delete(sale);
+            count++;
+        }
+        assertEquals(list.size(), count);
+
+        list = saleDao.searchAll();
+        assertNotNull(list);
+        assertEquals(0, list.size());
     }
 }

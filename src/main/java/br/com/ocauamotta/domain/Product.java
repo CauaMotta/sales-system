@@ -1,26 +1,25 @@
 package br.com.ocauamotta.domain;
 
-import java.math.BigDecimal;
-
-import annotation.KeyType;
-import br.com.ocauamotta.dao.Persistent;
-
 public class Product implements Persistent {
 
-    @KeyType("getCode")
-    private String code;
-
+    private Long code;
+    private Long id;
     private String name;
+    private Double price;
 
-    private String desc;
+    public Long getId() {
+        return id;
+    }
 
-    private BigDecimal value;
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getCode() {
+    public Long getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Long code) {
         this.code = code;
     }
 
@@ -32,20 +31,12 @@ public class Product implements Persistent {
         this.name = name;
     }
 
-    public String getDesc() {
-        return desc;
+    public Double getPrice() {
+        return price;
     }
 
-    public void setDesc(String desc) {
-        this.desc = desc;
-    }
-
-    public BigDecimal getValue() {
-        return value;
-    }
-
-    public void setValue(BigDecimal value) {
-        this.value = value;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
 }
