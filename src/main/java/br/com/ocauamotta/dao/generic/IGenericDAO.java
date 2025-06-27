@@ -1,21 +1,23 @@
 package br.com.ocauamotta.dao.generic;
 
 import br.com.ocauamotta.domain.Persistent;
+import br.com.ocauamotta.exceptions.DaoException;
+import br.com.ocauamotta.exceptions.KeyTypeNotFoundException;
+import br.com.ocauamotta.exceptions.MultipleRecordsFoundException;
+import br.com.ocauamotta.exceptions.TableException;
 
-import java.sql.SQLException;
-import java.util.List;
+import java.io.Serializable;
+import java.util.Collection;
 
-public interface IGenericDAO <T extends Persistent> {
+public interface IGenericDAO <T extends Persistent, E extends Serializable> {
 
-    public Integer register(T entity) throws Exception;
+    public Boolean register(T entity) throws DaoException, TableException;
 
-    public Integer delete(T entity) throws Exception;
+    public Integer delete(E value) throws DaoException;
 
-    public Integer update(T entity) throws Exception;
+    public Integer update(T entity) throws DaoException;
 
-    public T search(Long id) throws Exception;
+    public T search(E value) throws MultipleRecordsFoundException, TableException, DaoException;
 
-    public T searchWithCode(Long code) throws Exception;
-
-    public List<T> searchAll() throws Exception;
+    public Collection<T> searchAll() throws DaoException;
 }

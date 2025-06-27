@@ -1,22 +1,43 @@
 package br.com.ocauamotta.domain;
 
+import br.com.ocauamotta.annotation.KeyType;
+import br.com.ocauamotta.annotation.Table;
+import br.com.ocauamotta.annotation.TableColumn;
+
+@Table("tb_client")
 public class Client implements Persistent {
 
-    private Long code;
+    @TableColumn(dbName = "id", setJavaName = "setId")
+    private Long id;
+    @TableColumn(dbName = "clientName", setJavaName = "setName")
     private String name;
+    @KeyType("getCpf")
+    @TableColumn(dbName = "clientCpf", setJavaName = "setCpf")
     private Long cpf;
+    @TableColumn(dbName = "clientEmail", setJavaName = "setEmail")
+    private String email;
+    @TableColumn(dbName = "clientPhone", setJavaName = "setPhone")
     private Long phone;
+    @TableColumn(dbName = "clientAddress", setJavaName = "setAddress")
     private String address;
+    @TableColumn(dbName = "clientNumber", setJavaName = "setNumber")
     private Integer number;
+    @TableColumn(dbName = "clientCity", setJavaName = "setCity")
     private String city;
+    @TableColumn(dbName = "clientState", setJavaName = "setState")
     private String state;
 
-    public Long getCode() {
-        return code;
+    public Client() {
     }
 
-    public void setCode(Long code) {
-        this.code = code;
+    @Override
+    public Long getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -33,6 +54,14 @@ public class Client implements Persistent {
 
     public void setCpf(Long cpf) {
         this.cpf = cpf;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Long getPhone() {
