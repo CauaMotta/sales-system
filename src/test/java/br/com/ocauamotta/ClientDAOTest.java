@@ -1,7 +1,7 @@
 package br.com.ocauamotta;
 
-import br.com.ocauamotta.dao.generic.IGenericDAO;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import br.com.ocauamotta.dao.ClientDAO;
@@ -13,106 +13,94 @@ import static org.junit.Assert.*;
 
 public class ClientDAOTest {
 
-    private IGenericDAO<Client, Long> clientDao;
-
+    private static ClientDAO clientDao;
     private Client client;
 
-    public ClientDAOTest() {
+    @BeforeClass
+    public static void setUpClass() {
         clientDao = new ClientDAO();
     }
 
     @Before
     public void init() {
-        client = new Client();
-        client.setName("Nome de Teste");
-        client.setCpf(11122233345L);
+        client = createClient("Nome de Teste", 11122233345L);
+    }
+
+    @Test
+    public void testSaveAndFindNewClient() {
+        Client entity = clientDao.register(client);
+        assertNotNull(entity);
+
+        Client foundClient = clientDao.findById(client.getId());
+        assertNotNull(foundClient);
+        assertEquals("Nome de Teste", foundClient.getName());
+        assertTrue(foundClient.getCpf().equals(11122233345L));
+
+        clientDao.delete(client.getId());
+    }
+
+    @Test
+    public void testRemoveClient() {
+        clientDao.register(client);
+        clientDao.delete(client.getId());
+
+        Client foundClient = clientDao.findById(client.getId());
+        assertNull(foundClient);
+    }
+
+    @Test
+    public void testUpdateClient() {
+        clientDao.register(client);
+
+        Client foundClient = clientDao.findById(client.getId());
+        assertNotNull(foundClient);
+        assertEquals("Nome de Teste", foundClient.getName());
+        assertTrue(foundClient.getCpf().equals(11122233345L));
+
+        client.setName("Teste de Nome");
+        Client entity = clientDao.update(client);
+        assertNotNull(entity);
+
+        foundClient = clientDao.findById(client.getId());
+        assertNotNull(foundClient);
+        assertEquals("Teste de Nome", foundClient.getName());
+
+        clientDao.delete(client.getId());
+    }
+
+    @Test
+    public void testFindAllClients() {
+        Client client2 = createClient("Teste de Nome", 22245698730L);
+
+        clientDao.register(client);
+        clientDao.register(client2);
+
+        Collection<Client> list = clientDao.findAll();
+        assertNotNull(list);
+        assertEquals(2, list.size());
+
+        int count = 0;
+        for (Client client : list) {
+            clientDao.delete(client.getId());
+            count++;
+        }
+        assertEquals(list.size(), count);
+
+        list = clientDao.findAll();
+        assertNotNull(list);
+        assertEquals(0, list.size());
+    }
+
+    private Client createClient(String name, Long cpf) {
+        Client client = new Client();
+        client.setName(name);
+        client.setCpf(cpf);
         client.setEmail("emailteste@gmail.com");
         client.setPhone(12345678912L);
         client.setAddress("Rua JavaScript");
         client.setNumber(12456);
         client.setCity("Java");
         client.setState("TS");
-    }
-
-    @Test
-    public void registerClientTest() throws Exception {
-        Boolean dbRes = clientDao.register(client);
-        assertTrue(dbRes);
-
-        clientDao.delete(client.getCpf());
-    }
-
-    @Test
-    public void searchClientTest() throws Exception {
-        clientDao.register(client);
-
-        Client clientConsulted = clientDao.search(client.getCpf());
-        assertNotNull(clientConsulted);
-        assertEquals(client.getCpf(), clientConsulted.getCpf());
-        assertEquals(client.getName(), clientConsulted.getName());
-
-        clientDao.delete(client.getCpf());
-    }
-
-    @Test
-    public void deleteClientTest() throws Exception {
-        clientDao.register(client);
-
-        Integer dbRes = clientDao.delete(client.getCpf());
-        assertTrue(dbRes == 1);
-    }
-
-    @Test
-    public void updateClientTest() throws Exception {
-        clientDao.register(client);
-
-        Client clientConsulted = clientDao.search(client.getCpf());
-
-        assertNotNull(clientConsulted);
-        assertEquals(client.getName(), clientConsulted.getName());
-        assertEquals(client.getCpf(), clientConsulted.getCpf());
-
-        client.setName("Teste de Nome");
-        Integer dbRes = clientDao.update(client);
-        assertTrue(dbRes == 1);
-
-        clientConsulted = clientDao.search(client.getCpf());
-
-        assertNotNull(clientConsulted);
-        assertEquals(client.getName(), clientConsulted.getName());
-        assertEquals(client.getCpf(), clientConsulted.getCpf());
-
-        clientDao.delete(client.getCpf());
-    }
-
-    @Test
-    public void searchAllClientsTest() throws Exception {
-        Client client2 = new Client();
-        client2.setName("Teste de Nome");
-        client2.setCpf(22245698730L);
-        client2.setEmail("emailteste@gmail.com");
-        client2.setPhone(12345678912L);
-        client2.setAddress("Rua JavaScript");
-        client2.setNumber(12456);
-        client2.setCity("Java");
-        client2.setState("TS");
-
-        clientDao.register(client);
-        clientDao.register(client2);
-
-        Collection<Client> list = clientDao.searchAll();
-        assertNotNull(list);
-        assertEquals(2, list.size());
-
-        int count = 0;
-        for (Client client : list) {
-            clientDao.delete(client.getCpf());
-            count++;
-        }
-        assertEquals(list.size(), count);
-
-        list = clientDao.searchAll();
-        assertNotNull(list);
-        assertEquals(0, list.size());
+        return client;
     }
 }

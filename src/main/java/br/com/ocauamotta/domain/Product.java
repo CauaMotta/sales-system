@@ -1,26 +1,25 @@
 package br.com.ocauamotta.domain;
 
-import br.com.ocauamotta.annotation.KeyType;
-import br.com.ocauamotta.annotation.Table;
-import br.com.ocauamotta.annotation.TableColumn;
-
+import javax.persistence.*;
 import java.math.BigDecimal;
 
-@Table("tb_product")
+@Entity
+@Table(name = "tb_product")
 public class Product implements Persistent {
 
-    @TableColumn(dbName = "id", setJavaName = "setId")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "product_seq")
+    @SequenceGenerator(name = "product_seq", sequenceName = "sq_product", initialValue = 1, allocationSize = 1)
     private Long id;
-    @KeyType("getCode")
-    @TableColumn(dbName = "productCode", setJavaName = "setCode")
+    @Column(length = 50, nullable = false, unique = true)
     private String code;
-    @TableColumn(dbName = "productName", setJavaName = "setName")
+    @Column(length = 100, nullable = false)
     private String name;
-    @TableColumn(dbName = "productDescription", setJavaName = "setDescription")
+    @Column(length = 255)
     private String description;
-    @TableColumn(dbName = "productCategory", setJavaName = "setCategory")
+    @Column(length = 100, nullable = false)
     private String category;
-    @TableColumn(dbName = "productPrice", setJavaName = "setPrice")
+    @Column(nullable = false)
     private BigDecimal price;
 
     @Override

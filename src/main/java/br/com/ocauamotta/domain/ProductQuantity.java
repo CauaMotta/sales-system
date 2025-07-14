@@ -1,21 +1,26 @@
 package br.com.ocauamotta.domain;
 
-import br.com.ocauamotta.annotation.Table;
-import br.com.ocauamotta.annotation.TableColumn;
-
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-@Table("tb_product_quantity")
+@Entity
+@Table(name = "tb_product_quantity")
 public class ProductQuantity implements Persistent {
 
-    @TableColumn(dbName = "id", setJavaName = "setId")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "prodQnt_seq")
+    @SequenceGenerator(name = "prodQnt_seq", sequenceName = "sq_productQuantity", initialValue = 1, allocationSize = 1)
     private Long id;
+    @ManyToOne
     private Product product;
-    @TableColumn(dbName = "quantity", setJavaName = "setQuantity")
+    @Column(nullable = false)
     private Integer quantity;
-    @TableColumn(dbName = "totalValue", setJavaName = "setTotalValue")
+    @Column
     private BigDecimal totalValue;
+    @ManyToOne
+    @JoinColumn(name = "saleId", foreignKey = @ForeignKey(name = "fk_prodQnt_sale"), referencedColumnName = "id", nullable = false)
+    private Sale sale;
 
     public ProductQuantity() {
         this.quantity = 0;
@@ -54,6 +59,14 @@ public class ProductQuantity implements Persistent {
 
     public void setTotalValue(BigDecimal totalValue) {
         this.totalValue = totalValue;
+    }
+
+    public Sale getSale() {
+        return sale;
+    }
+
+    public void setSale(Sale sale) {
+        this.sale = sale;
     }
 
     public void addProduct(Integer quantity) {

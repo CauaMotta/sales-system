@@ -5,8 +5,7 @@ import br.com.ocauamotta.domain.Client;
 
 public class ClientDAO extends GenericDAO<Client, Long> {
 
-    @Override
-    public Class<Client> getClassType() {
-        return Client.class;
+    public ClientDAO() {
+        super(Client.class);
     }
 }

@@ -3,22 +3,17 @@ package br.com.ocauamotta;
 import br.com.ocauamotta.dao.ClientDAO;
 import br.com.ocauamotta.dao.ProductDAO;
 import br.com.ocauamotta.dao.SaleDAO;
-import br.com.ocauamotta.dao.generic.IGenericDAO;
-import br.com.ocauamotta.dao.jdbc.ConnectionFactory;
 import br.com.ocauamotta.domain.Client;
 import br.com.ocauamotta.domain.Product;
 import br.com.ocauamotta.domain.Sale;
-import br.com.ocauamotta.exceptions.DaoException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import javax.persistence.PersistenceException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -27,316 +22,302 @@ import static org.junit.Assert.*;
 
 public class SaleDAOTest {
 
-    private SaleDAO saleDao;
-    private IGenericDAO<Client, Long> clientDao;
-    private IGenericDAO<Product, String> productDao;
+    private static SaleDAO saleDao;
+    private static ClientDAO clientDao;
+    private static ProductDAO productDao;
 
-    private Sale sale;
-    private Client client;
-    private Product product;
+    private static Client client;
+    private static Product product;
+    private static Product product2;
 
-    public SaleDAOTest() {
+    @BeforeClass
+    public static void setUpClass() {
         saleDao = new SaleDAO();
         clientDao = new ClientDAO();
         productDao = new ProductDAO();
+
+        client = clientDao.register(createClient("Cliente Teste", 11122233345L));
+        product = productDao.register(createProduct("A1", "Produto Teste"));
+        product2 = productDao.register(createProduct("B1", "Teste Produto"));
     }
 
-    @Before
-    public void init() throws Exception {
-        client = new Client();
-        client.setName("Nome de Teste");
-        client.setCpf(11122233345L);
+    @After
+    public void tearDown() {
+        executeDelete("DELETE FROM tb_product_quantity");
+        executeDelete("DELETE FROM tb_sale");
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        executeDelete("DELETE FROM tb_client");
+        executeDelete("DELETE FROM tb_product");
+    }
+
+    @Test
+    public void testSaveAndFindNewSale() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        assertNotNull(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertEquals("S01", foundSale.getCode());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test
+    public void testFindAllSales() {
+        saleDao.register(createSale("S01", client, product, 2));
+        saleDao.register(createSale("S02", client, product, 5));
+
+        Collection<Sale> list = saleDao.findAll();
+        assertNotNull(list);
+        assertEquals(2, list.size());
+
+        int count = 0;
+        for (Sale sale : list) {
+            saleDao.delete(sale.getId());
+            count++;
+        }
+        assertEquals(list.size(), count);
+
+        list = saleDao.findAll();
+        assertNotNull(list);
+        assertEquals(0, list.size());
+    }
+
+    @Test
+    public void testAddMoreProducts() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+
+        sale.addProduct(product, 1);
+        saleDao.update(sale);
+
+        foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 3);
+        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test
+    public void testAddMultipleProducts() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+
+        sale.addProduct(product2, 2);
+        saleDao.update(sale);
+
+        foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 4);
+        totalValue = BigDecimal.valueOf(40).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test
+    public void testDecreaseProductQuantity() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        sale.addProduct(product2, 2);
+        sale = saleDao.update(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 4);
+        BigDecimal totalValue = BigDecimal.valueOf(40).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+
+        sale.removeProduct(product, 1);
+        sale = saleDao.update(sale);
+
+        foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 3);
+        totalValue = BigDecimal.valueOf(30).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test
+    public void testRemoveProduct() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        sale.addProduct(product2, 2);
+        sale = saleDao.update(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 4);
+        BigDecimal totalValue = BigDecimal.valueOf(40).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+
+        sale.removeProduct(product, 2);
+        sale = saleDao.update(sale);
+
+        foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test
+    public void testRemoveAllProducts() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        sale.addProduct(product2, 2);
+        sale = saleDao.update(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 4);
+        BigDecimal totalValue = BigDecimal.valueOf(40).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+
+        sale.removeAllProducts();
+        sale = saleDao.update(sale);
+
+        foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 0);
+        totalValue = BigDecimal.valueOf(0).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.INICIADA, foundSale.getStatus());
+    }
+
+    @Test(expected = PersistenceException.class)
+    public void testSaveSameSale () {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        saleDao.register(sale);
+    }
+
+    @Test
+    public void testFinishSale() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+
+        sale = saleDao.finishSale(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.CONCLUIDA, foundSale.getStatus());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testModifyCompletedSale() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        sale = saleDao.finishSale(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertEquals("S01", foundSale.getCode());
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.CONCLUIDA, foundSale.getStatus());
+
+        sale.addProduct(product, 1);
+    }
+
+    @Test
+    public void testCancelSale() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+
+        sale = saleDao.cancelSale(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.CANCELADA, foundSale.getStatus());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testModifyCanceledSale() {
+        Sale sale = saleDao.register(createSale("S01", client, product, 2));
+        sale = saleDao.cancelSale(sale);
+
+        Sale foundSale = saleDao.findById(sale.getId());
+        assertNotNull(foundSale);
+        assertEquals("S01", foundSale.getCode());
+        assertTrue(foundSale.getTotalProductQuantity() == 2);
+        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
+        assertEquals(totalValue, foundSale.getTotalValue());
+        assertEquals(Sale.Status.CANCELADA, foundSale.getStatus());
+
+        sale.addProduct(product, 1);
+    }
+
+    private static Client createClient(String name, Long cpf) {
+        Client client = new Client();
+        client.setName(name);
+        client.setCpf(cpf);
         client.setEmail("emailteste@gmail.com");
         client.setPhone(12345678912L);
         client.setAddress("Rua JavaScript");
         client.setNumber(12456);
         client.setCity("Java");
         client.setState("TS");
-        clientDao.register(client);
+        return client;
+    }
 
-        product = new Product();
-        product.setCode("A1");
-        product.setName("Produto de Teste");
+    private static Product createProduct(String code, String name) {
+        Product product = new Product();
+        product.setCode(code);
+        product.setName(name);
         product.setDescription("Descrição de teste.");
         product.setCategory("Categoria de teste");
         product.setPrice(BigDecimal.TEN);
-        productDao.register(product);
+        return product;
+    }
 
-        sale = new Sale();
-        sale.setCode("S01");
+    private static Sale createSale(String code, Client client, Product product, Integer quantity) {
+        Sale sale = new Sale();
+        sale.setCode(code);
         sale.setDate(Instant.now().truncatedTo(ChronoUnit.SECONDS));
         sale.setClient(client);
         sale.setStatus(Sale.Status.INICIADA);
-        sale.addProduct(product, 2);
+        sale.addProduct(product, quantity);
+        return sale;
     }
 
-    @After
-    public void cleanDb() throws Exception {
-        executeDelete("DELETE FROM tb_productQuantity");
-        executeDelete("DELETE FROM tb_sale");
-        executeDelete("DELETE FROM tb_product");
-        executeDelete("DELETE FROM tb_client");
-    }
-
-    @Test
-    public void registerNewSaleTest() throws Exception {
-        Boolean dbRes = saleDao.register(sale);
-        assertTrue(dbRes);
-    }
-
-    @Test
-    public void searchSaleTest() throws Exception {
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-        assertEquals(sale.getClientId(), saleConsulted.getClientId());
-        assertEquals(sale.getDate(), saleConsulted.getDate());
-        assertEquals(sale.getStatus(), saleConsulted.getStatus());
-    }
-
-    @Test
-    public void searchAllSalesTest() throws Exception {
-        Sale sale2 = new Sale();
-        sale2.setCode("S02");
-        sale2.setDate(Instant.now().truncatedTo(ChronoUnit.SECONDS));
-        sale2.setClient(client);
-        sale2.setStatus(Sale.Status.INICIADA);
-        sale2.addProduct(product, 2);
-
-        saleDao.register(sale);
-        saleDao.register(sale2);
-
-        Collection<Sale> list = saleDao.searchAll();
-        assertNotNull(list);
-        assertEquals(2, list.size());
-    }
-
-    @Test
-    public void addMoreProductsTest() throws Exception {
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 2);
-        BigDecimal totalValue = BigDecimal.valueOf(20).setScale(2, RoundingMode.HALF_DOWN);
-        assertEquals(totalValue, saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-
-        sale.addProduct(product, 1);
-        saleDao.update(sale);
-
-        saleConsulted = saleDao.search(sale.getCode());
-
-        assertTrue(saleConsulted.getTotalProductQuantity() == 3);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-    }
-
-    @Test
-    public void addMultipleProductsTest() throws Exception {
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 2);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-
-        Product product2 = new Product();
-        product2.setCode("B1");
-        product2.setName("Teste");
-        product2.setDescription("Descrição.");
-        product2.setCategory("Categoria de teste");
-        product2.setPrice(BigDecimal.valueOf(5));
-        productDao.register(product2);
-
-        sale.addProduct(product2, 2);
-        saleDao.update(sale);
-
-        saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 4);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-    }
-
-    @Test
-    public void decreaseProductQuantityTest() throws Exception {
-        Product product2 = new Product();
-        product2.setCode("B1");
-        product2.setName("Teste");
-        product2.setDescription("Descrição.");
-        product2.setCategory("Categoria de teste");
-        product2.setPrice(BigDecimal.valueOf(5));
-        productDao.register(product2);
-        sale.addProduct(product2, 3);
-
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 5);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-
-        sale.removeProduct(product, 1);
-
-        saleDao.update(sale);
-
-        saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 4);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-    }
-
-    @Test
-    public void removeProductTest() throws Exception {
-        Product product2 = new Product();
-        product2.setCode("B1");
-        product2.setName("Teste");
-        product2.setDescription("Descrição.");
-        product2.setCategory("Categoria de teste");
-        product2.setPrice(BigDecimal.valueOf(5));
-        productDao.register(product2);
-        sale.addProduct(product2, 3);
-
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 5);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-
-        sale.removeProduct(product, 2);
-
-        saleDao.update(sale);
-
-        saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 3);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-    }
-
-    @Test
-    public void removeAllProductTest() throws Exception {
-        Product product2 = new Product();
-        product2.setCode("B1");
-        product2.setName("Teste");
-        product2.setDescription("Descrição.");
-        product2.setCategory("Categoria de teste");
-        product2.setPrice(BigDecimal.valueOf(5));
-        productDao.register(product2);
-        sale.addProduct(product2, 3);
-
-        saleDao.register(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 5);
-        assertEquals(sale.getTotalValue().setScale(2, RoundingMode.HALF_DOWN), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-
-        sale.removeAllProducts();
-
-        saleDao.update(sale);
-
-        saleConsulted = saleDao.search(sale.getCode());
-        assertTrue(saleConsulted.getTotalProductQuantity() == 0);
-        assertEquals(sale.getTotalValue(), saleConsulted.getTotalValue());
-        assertEquals(Sale.Status.INICIADA, saleConsulted.getStatus());
-    }
-
-    @Test(expected = DaoException.class)
-    public void saveSaleWithCodeExistingTest() throws Exception {
-        saleDao.register(sale);
-        saleDao.register(sale);
-    }
-
-    @Test
-    public void finishSaleTest() throws Exception {
-        saleDao.register(sale);
-
-        saleDao.saleCompleted(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getId(), saleConsulted.getId());
-        assertEquals(Sale.Status.CONCLUIDA, saleConsulted.getStatus());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void modifySaleCompletedTest() throws Exception {
-        saleDao.register(sale);
-        saleDao.saleCompleted(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getId(), saleConsulted.getId());
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-        assertEquals(Sale.Status.CONCLUIDA, saleConsulted.getStatus());
-
-        sale.addProduct(product, 1);
-    }
-
-    @Test
-    public void cancelSaleTest() throws Exception {
-        saleDao.register(sale);
-
-        saleDao.cancelSale(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getId(), saleConsulted.getId());
-        assertEquals(Sale.Status.CANCELADA, saleConsulted.getStatus());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void modifySaleCanceledTest() throws Exception {
-        saleDao.register(sale);
-        saleDao.cancelSale(sale);
-
-        Sale saleConsulted = saleDao.search(sale.getCode());
-        assertNotNull(saleConsulted);
-        assertEquals(sale.getId(), saleConsulted.getId());
-        assertEquals(sale.getCode(), saleConsulted.getCode());
-        assertEquals(Sale.Status.CANCELADA, saleConsulted.getStatus());
-
-        sale.addProduct(product, 1);
-    }
-
-    private void executeDelete(String sql) throws DaoException {
-        Connection connection = null;
-        PreparedStatement ps = null;
+    private static void executeDelete(String sql) {
+        EntityManagerFactory entityManagerFactory = null;
+        EntityManager entityManager = null;
 
         try {
-            connection = getConnection();
-            ps = connection.prepareStatement(sql);
-            ps.executeUpdate();
-        } catch (SQLException err) {
-            throw new DaoException("Erro ao tentar excluir os objetos do banco de dados.", err);
-        } finally {
-            closeConnection(connection, ps, null);
-        }
-    }
+            entityManagerFactory = Persistence.createEntityManagerFactory("ExemploJPA");
+            entityManager = entityManagerFactory.createEntityManager();
 
-    private void closeConnection(Connection connection, PreparedStatement stm, ResultSet resultSet) {
-        try {
-            if (resultSet != null && !resultSet.isClosed()) {
-                resultSet.close();
+            entityManager.getTransaction().begin();
+            entityManager.createNativeQuery(sql).executeUpdate();
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            if (entityManager != null && entityManager.getTransaction().isActive()) {
+                entityManager.getTransaction().rollback();
             }
-            if (stm != null && !stm.isClosed()) {
-                stm.close();
-            }
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
-        } catch (SQLException e) {
             e.printStackTrace();
-        }
-    }
-
-    private Connection getConnection() throws DaoException {
-        try {
-            return ConnectionFactory.getConnection();
-        } catch (SQLException err) {
-            throw new DaoException("Erro ao tentar abrir conexão com o banco de dados.", err);
+        } finally {
+            if (entityManager != null) entityManager.close();
+            if (entityManagerFactory != null) entityManagerFactory.close();
         }
     }
 }

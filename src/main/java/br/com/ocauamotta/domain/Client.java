@@ -1,30 +1,30 @@
 package br.com.ocauamotta.domain;
 
-import br.com.ocauamotta.annotation.KeyType;
-import br.com.ocauamotta.annotation.Table;
-import br.com.ocauamotta.annotation.TableColumn;
+import javax.persistence.*;
 
-@Table("tb_client")
+@Entity
+@Table(name = "tb_client")
 public class Client implements Persistent {
 
-    @TableColumn(dbName = "id", setJavaName = "setId")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "client_seq")
+    @SequenceGenerator(name = "client_seq", sequenceName = "sq_client", initialValue = 1, allocationSize = 1)
     private Long id;
-    @TableColumn(dbName = "clientName", setJavaName = "setName")
+    @Column(length = 100, nullable = false)
     private String name;
-    @KeyType("getCpf")
-    @TableColumn(dbName = "clientCpf", setJavaName = "setCpf")
+    @Column(nullable = false, unique = true)
     private Long cpf;
-    @TableColumn(dbName = "clientEmail", setJavaName = "setEmail")
+    @Column(length = 100, nullable = false)
     private String email;
-    @TableColumn(dbName = "clientPhone", setJavaName = "setPhone")
+    @Column(nullable = false)
     private Long phone;
-    @TableColumn(dbName = "clientAddress", setJavaName = "setAddress")
+    @Column(length = 200, nullable = false)
     private String address;
-    @TableColumn(dbName = "clientNumber", setJavaName = "setNumber")
+    @Column
     private Integer number;
-    @TableColumn(dbName = "clientCity", setJavaName = "setCity")
+    @Column(length = 100, nullable = false)
     private String city;
-    @TableColumn(dbName = "clientState", setJavaName = "setState")
+    @Column(length = 100, nullable = false)
     private String state;
 
     public Client() {

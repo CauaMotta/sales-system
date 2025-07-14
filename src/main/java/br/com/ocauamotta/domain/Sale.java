@@ -1,16 +1,13 @@
 package br.com.ocauamotta.domain;
 
-import br.com.ocauamotta.annotation.KeyType;
-import br.com.ocauamotta.annotation.Table;
-import br.com.ocauamotta.annotation.TableColumn;
-
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
-@Table("tb_sale")
+@Entity
+@Table(name = "tb_sale")
 public class Sale implements Persistent {
 
     public enum Status {
@@ -26,19 +23,22 @@ public class Sale implements Persistent {
         }
     }
 
-    @TableColumn(dbName = "id", setJavaName = "setId")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sale_seq")
+    @SequenceGenerator(name = "sale_seq", sequenceName = "sq_sale", initialValue = 1, allocationSize = 1)
     private Long id;
-    @KeyType("getCode")
-    @TableColumn(dbName = "saleCode", setJavaName = "setCode")
+    @Column(length = 100, nullable = false, unique = true)
     private String code;
-    @TableColumn(dbName = "clientId", setJavaName = "setClientId")
+    @ManyToOne
+    @JoinColumn(name = "clientId", foreignKey = @ForeignKey(name = "fk_sale_client"), referencedColumnName = "id", nullable = false)
     private Client client;
+    @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private Set<ProductQuantity> products;
-    @TableColumn(dbName = "totalValue", setJavaName = "setTotalValue")
+    @Column
     private BigDecimal totalValue;
-    @TableColumn(dbName = "saleDate", setJavaName = "setDate")
+    @Column(nullable = false)
     private Instant date;
-    @TableColumn(dbName = "saleStatus", setJavaName = "setStatus")
+    @Column(nullable = false)
     private Status status;
 
     public Sale() {
@@ -115,9 +115,9 @@ public class Sale implements Persistent {
                 .ifPresentOrElse(prodQnt -> prodQnt.addProduct(quantity),
                         () -> {
                             ProductQuantity prodQnt = new ProductQuantity();
-                            prodQnt.setId(Long.valueOf(products.size()));
                             prodQnt.setProduct(product);
                             prodQnt.addProduct(quantity);
+                            prodQnt.setSale(this);
                             products.add(prodQnt);
                         }
                 );
