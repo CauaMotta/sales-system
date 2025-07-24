@@ -1,0 +1,198 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="jakarta.faces.html"
+	xmlns:f="jakarta.faces.core"
+	 xmlns:p="http://primefaces.org/ui">
+<f:view>
+	<h:head>
+		<h:outputStylesheet>
+			* {
+				padding: 0;
+				margin: 0;
+				box-sizing: border-box; 
+			}
+			
+			body {
+				text-align: center;
+				padding-top: 32px;
+				color: #f0f0f0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			}
+			
+			h3 {
+				margin-bottom: 16px;
+			}
+			
+			h3:nth-of-type(2) {
+				margin-top: 16px;
+			}
+			
+			.ui-g-8 {
+				background-color: #1f2d40;
+				border-radius: 8px;
+			}
+			
+			#add {
+				padding-block: 16px;
+			}
+			
+			#add tr > td:nth-child(1) {
+				text-align: right;
+				font-weight: bold;
+				padding-right: 8px;
+			}
+			
+			#add tr > td:nth-child(2) {
+				padding-inline: 8px;
+			}
+			
+			#add tr > td:nth-child(2) > input {
+				width: 100%;
+			}
+			
+			.button-group {
+				margin-top: 16px;
+				display: flex;
+				justify-content: center;
+				gap: 16px;
+			}
+			
+			.home-button {
+				background-color: transparent;
+				width: 100%;
+				display: flex;
+			}
+			
+        </h:outputStylesheet>
+	</h:head>
+	<h:body>
+		<p:outputPanel>
+			<div class="ui-g">
+				<div class="ui-g-2"></div>
+				<div class="home-button ui-g-8">
+					<p:button value="Página Principal" outcome="/index" icon="pi pi-home" />
+				</div>
+				<div class="ui-g-2"></div>
+			</div>
+			<h3>Cadastrar Novo Cliente</h3>
+			<div class="ui-g">
+				<div class="ui-g-2"></div>
+				<div class="ui-g-8">
+					<h:form id="add">
+						<h:panelGrid columns="3" cellpadding="5" style="margin: 0 auto;">
+							<p:outputLabel for="Nome" value="Nome" />
+							<p:inputText id="Nome"
+								value="#{clientController.client.name}" required="true" />
+							<p:message for="Nome" />
+							
+							<p:outputLabel for="cpf" value="CPF" />
+							<p:inputText id="cpf" value="#{clientController.client.cpf}"
+								size="11" maxlength="11" required="true" />
+							<p:message for="cpf" />
+	
+							<p:outputLabel for="tel" value="Telefone" />
+							<p:inputText id="tel"
+								value="#{clientController.client.phone}" required="true">
+							</p:inputText>
+							<p:message for="tel" />
+
+							<p:outputLabel for="email" value="E-Mail" />
+							<p:inputText id="email"
+								value="#{clientController.client.email}" required="true">
+							</p:inputText>
+							<p:message for="email" />
+							
+							<p:outputLabel for="end" value="Endereço" />
+							<p:inputText id="end"
+								value="#{clientController.client.address}" required="true">
+							</p:inputText>
+							<p:message for="end" />
+							
+							<p:outputLabel for="numero" value="Numero" />
+							<p:inputText id="numero"
+								value="#{clientController.client.number}" required="true">
+							</p:inputText>
+							<p:message for="numero" />
+							
+							<p:outputLabel for="cidade" value="Cidade" />
+							<p:inputText id="cidade"
+								value="#{clientController.client.city}" required="true" size="50">
+							</p:inputText>
+							<p:message for="cidade" />
+							
+							<p:outputLabel for="estado" value="Estado" />
+							<p:inputText id="estado"
+								value="#{clientController.client.state}" required="true" size="50">
+							</p:inputText>
+							<p:message for="estado" />
+						</h:panelGrid>
+						<div class="button-group">
+	                        <p:commandButton value="Cadastrar" icon="pi pi-check" action="#{clientController.add}"
+	                                         update="@form :customers:customerList"
+	                                         rendered="#{!clientController.isUpdate}" />
+	
+	                        <p:commandButton value="Atualizar" icon="pi pi-refresh" action="#{clientController.update}"
+	                                         update="@form :customers:customerList"
+	                                         rendered="#{clientController.isUpdate}" />
+	
+	                        <p:commandButton value="Cancelar" icon="pi pi-times" action="#{clientController.cancel}"
+	                                         update="add" immediate="true" styleClass="ui-button-secondary">
+	                            <f:ajax render="add" resetValues="true"/>
+	                        </p:commandButton>
+                    	</div>
+					</h:form>
+				</div>
+				<div class="ui-g-2"></div>
+			</div>
+			
+			<h3>Clientes Cadastrados</h3>
+			<div class="ui-g">
+				<div class="ui-g-2"></div>
+				<div class="ui-g-8">
+					<h:form id="customers">
+						<p:growl id="growl" sticky="true" />
+
+						<p:dataTable id="customerList" var="customer"
+							value="#{clientController.clients}">
+							<p:column headerText="Id">
+								<h:outputText value="#{customer.id}" />
+							</p:column>
+
+							<p:column headerText="Nome">
+								<h:outputText id="nomeInput" value="#{customer.name}" />
+							</p:column>
+
+							<p:column headerText="Telefone">
+								<h:outputText id="telInput" value="#{customer.phone}" />
+							</p:column>
+
+							<p:column headerText="Email">
+								<h:outputText id="emailInput" value="#{customer.email}" />
+							</p:column>
+
+							<p:column headerText="Ações">
+                            <div class="button-group">
+                                <p:commandButton icon="pi pi-pencil" update="customerList add"
+                                                 action="#{clientController.edit(customer)}"
+                                                 title="Editar" styleClass="ui-button-warning" />
+                                <p:commandButton icon="pi pi-trash" update="customerList"
+                                                 action="#{clientController.delete(customer)}"
+                                                 styleClass="ui-button-danger" title="Excluir">
+                                    <p:confirm header="Atenção" message="Tem certeza que deseja excluir este cliente?"
+                                               icon="pi pi-exclamation-triangle"/>
+                                </p:commandButton>
+                            </div>
+                        </p:column>
+						</p:dataTable>
+						<br />
+						<p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
+				            <p:commandButton value="Não" type="button" styleClass="ui-confirmdialog-no ui-button-flat"/>
+				            <p:commandButton value="Sim" type="button" styleClass="ui-confirmdialog-yes" />
+				        </p:confirmDialog>
+					</h:form>
+				</div>
+				<div class="ui-g-2"></div>
+			</div>
+		</p:outputPanel>
+	</h:body>
+</f:view>
+</html>

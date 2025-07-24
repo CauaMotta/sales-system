@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<f:view>
+    <h:head>
+        <title>Cadastro de Vendas</title>
+        <h:outputStylesheet>
+            * {
+                padding: 0;
+                margin: 0;
+                box-sizing: border-box; 
+            }
+
+            body {
+                text-align: center;
+                padding-top: 32px;
+                color: #f0f0f0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+            	margin-top: 16px;
+                margin-bottom: 16px;
+            }
+
+            .ui-g-8 {
+                background-color: #1f2d40;
+                border-radius: 8px;
+                padding: 16px;
+            }
+            
+            .newSale {
+            	padding-top: 16px;
+            }
+			
+			.newSale tr {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 4px;
+			}
+			
+			.button-group {
+				margin-top: 8px;
+				margin-bottom: 16px;
+				display: flex;
+				justify-content: center;
+				gap: 16px;
+			}
+        </h:outputStylesheet>
+    </h:head>
+
+    <h:body>
+        <p:outputPanel>
+            <div class="ui-g">
+                <div class="ui-g-2"></div>
+                <div class="home-button ui-g-8">
+                    <p:button value="Página Principal" outcome="/index" icon="pi pi-home" />
+                </div>
+                <div class="ui-g-2"></div>
+            </div>
+
+            <h3>Nova Venda</h3>
+        
+        	<div class="ui-g">
+        		<div class="ui-g-2"></div>
+        		<div class="ui-g-8">
+	        		<h:panelGrid class="newSale" columns="3" cellpadding="5" style="margin: 0 auto;">
+	        			<p:outputLabel for="Codigo" value="Código da Venda" />
+	        			<p:inputText id="Codigo" required="true" value="#{saleController.sale.code}"/>
+	        			<p:message for="Codigo" />
+						
+						<p:outputLabel for="Cliente" value="Cliente" />
+                        <p:selectOneMenu id="Cliente" value="#{saleController.sale.client}" required="true">
+                            <f:selectItem itemLabel="Selecione um cliente" itemValue="#{null}" />
+                            <f:selectItems value="#{saleController.clients}" var="cli"
+                                           itemLabel="#{cli.name}" itemValue="#{cli}" />
+                        </p:selectOneMenu>
+	        		</h:panelGrid>
+	        		
+	        		<div class="button-group">
+	                        <p:commandButton value="Iniciar Venda" icon="pi pi-shopping-cart" action="#{saleController.newSale}"
+	                                         update="sales" rendered="#{!clientController.isUpdate}" />
+	
+	                        <p:commandButton value="Atualizar" icon="pi pi-refresh" action="#{clientController.update}"
+	                                         rendered="#{clientController.isUpdate}" />
+	
+	                        <p:commandButton value="Cancelar" icon="pi pi-times" action="#{saleController.cancel}"
+	                                         immediate="true" styleClass="ui-button-secondary">
+	                            <f:ajax render="add" resetValues="true"/>
+	                        </p:commandButton>
+                    </div>
+        		</div>
+        		<div class="ui-g-2"></div>
+        	</div>
+
+            <h3>Histórico de Vendas</h3>
+            <div class="ui-g">
+                <div class="ui-g-2"></div>
+                <div class="ui-g-8">
+                    <h:form id="sales">
+                        <p:growl id="growl" sticky="true" />
+
+                        <p:dataTable id="salesList" var="s" value="#{saleController.sales}">
+                            <p:column headerText="ID">
+                                <h:outputText value="#{s.id}" />
+                            </p:column>
+
+                            <p:column headerText="Cliente">
+                                <h:outputText value="#{s.client.name}" />
+                            </p:column>
+
+                            <p:column headerText="Produto">
+                                <h:outputText value="#{s.product.name}" />
+                            </p:column>
+
+                            <p:column headerText="Quantidade">
+                                <h:outputText value="#{s.quantity}" />
+                            </p:column>
+
+                            <p:column headerText="Valor Total">
+                                <h:outputText value="#{s.total}" />
+                            </p:column>
+
+                            <p:column headerText="Ações">
+                                <div class="button-group">
+                                    <p:commandButton icon="pi pi-pencil"
+                                                     update="salesList addSale"
+                                                     action="#{saleController.edit(s)}"
+                                                     title="Editar"
+                                                     styleClass="ui-button-warning" />
+
+                                    <p:commandButton icon="pi pi-trash"
+                                                     update="salesList"
+                                                     action="#{saleController.delete(s)}"
+                                                     styleClass="ui-button-danger"
+                                                     title="Excluir">
+                                        <p:confirm header="Atenção"
+                                                   message="Deseja excluir esta venda?"
+                                                   icon="pi pi-exclamation-triangle" />
+                                    </p:commandButton>
+                                </div>
+                            </p:column>
+                        </p:dataTable>
+
+                        <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
+                            <p:commandButton value="Não" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+                            <p:commandButton value="Sim" type="button" styleClass="ui-confirmdialog-yes" />
+                        </p:confirmDialog>
+                    </h:form>
+                </div>
+                <div class="ui-g-2"></div>
+            </div>
+        </p:outputPanel>
+    </h:body>
+</f:view>
+</html>

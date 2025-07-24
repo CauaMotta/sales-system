@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<f:view>
+    <h:head>
+        <title>Cadastro de Vendas</title>
+        <h:outputStylesheet>
+            * {
+                padding: 0;
+                margin: 0;
+                box-sizing: border-box; 
+            }
+
+            body {
+                text-align: center;
+                padding-top: 32px;
+                color: #f0f0f0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+            	margin-top: 16px;
+                margin-bottom: 16px;
+            }
+
+            .ui-g-8 {
+                background-color: #1f2d40;
+                border-radius: 8px;
+                padding: 16px;
+            }
+            
+            .home-button {
+                background-color: transparent;
+                width: 100%;
+                display: flex;
+            }
+            
+            .newSale {
+            	padding-top: 16px;
+            }
+			
+			.newSale tr {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 4px;
+			}
+			
+			.button-group {
+				margin-top: 8px;
+				margin-bottom: 16px;
+				display: flex;
+				justify-content: center;
+				gap: 16px;
+			}
+			
+			#addProducts {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+			
+			#addProducts .products-title {
+				display: flex;
+				gap: 16px;
+			}
+			
+			#addProducts .addProduct {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 8px;
+			}
+			
+			#addProducts .addProduct > div {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+			}
+			
+			td.action {
+				display: flex;
+				justify-content: center;
+				gap: 8px;
+			}
+        </h:outputStylesheet>
+    </h:head>
+
+    <h:body>
+        <p:outputPanel>
+            <div class="ui-g">
+                <div class="ui-g-2"></div>
+                <div class="home-button ui-g-8">
+                    <p:button value="Página Principal" outcome="/index" icon="pi pi-home" />
+                </div>
+                <div class="ui-g-2"></div>
+            </div>
+
+            <h3>Nova Venda</h3>
+        
+        	<div class="ui-g">
+        		<div class="ui-g-2"></div>
+        		<div class="ui-g-8">
+	        		<p:outputPanel id="saleSection">
+	        			<h:form id="newSale" rendered="#{!saleController.viewProducts}">
+			        		<h:panelGrid class="newSale" columns="3" cellpadding="5" style="margin: 0 auto;">
+			        			<p:outputLabel for="Codigo" value="Código da Venda" />
+			        			<p:inputText id="Codigo" required="true" value="#{saleController.sale.code}"/>
+			        			<p:message for="Codigo" />
+								
+								<p:outputLabel for="Cliente" value="Cliente" />
+		                        <p:selectOneMenu id="Cliente" value="#{saleController.sale.client}" required="true">
+		                            <f:selectItem itemLabel="Selecione um cliente" itemValue="#{null}" />
+		                            <f:selectItems value="#{saleController.clients}" var="cli"
+		                                           itemLabel="#{cli.name}" itemValue="#{cli}" />
+		                        </p:selectOneMenu>
+			        		</h:panelGrid>
+			        		
+			        		<div class="button-group">
+			                        <p:commandButton value="Iniciar Venda" icon="pi pi-credit-card" action="#{saleController.newSale}"
+			                                         update="saleSection :sales:salesList" />
+			
+			                        <p:commandButton value="Cancelar" icon="pi pi-times" action="#{saleController.cancelAndRedirect}"
+			                                         immediate="true" styleClass="ui-button-secondary"
+			                                         update="saleSection" process="@this" />
+		                    </div>
+	        			</h:form>
+	        			
+	        			<h:form id="addProducts" rendered="#{saleController.viewProducts}">
+	        				<div class="products-title">
+	        					<h3 id="saleCode" style="margin-top: 1rem;">
+									Venda #{saleController.sale.code}
+								</h3>
+								<h3>|</h3>
+		        				<h3 id="totalValue" style="margin-top: 1rem;">
+									Total: R$ #{saleController.sale.totalValue}
+								</h3>
+	        				</div>
+		        			
+		        			<p:dataTable id="productTable" value="#{saleController.sale.products}" var="pq"
+								emptyMessage="Nenhum produto adicionado.">
+
+								<p:column headerText="ID">
+									#{pq.product.id}
+								</p:column>
+								
+								<p:column headerText="Produto">
+									#{pq.product.name}
+								</p:column>
+								<p:column headerText="Quantidade">
+									#{pq.quantity}
+								</p:column>
+								<p:column headerText="Valor Total">
+									R$ #{pq.totalValue}
+								</p:column>
+								<p:column class="action" headerText="Ações" rendered="#{saleController.validateStatus()}">
+									<p:commandButton icon="pi pi-pencil" title="Editar"
+                                        action="#{saleController.loadProduct(pq)}"
+                                        update="saleSection addProducts" process="@this"
+                                        styleClass="ui-button-raised ui-button-flat" />
+									<p:commandButton icon="pi pi-trash" title="Remover"
+			                                         action="#{saleController.deleteProduct(pq)}"
+			                                         update="saleSection addProducts" process="@this"
+			                                         styleClass="ui-button-raised ui-button-flat">
+                                        <p:confirm header="Atenção"
+                                                   message="Deseja excluir este produto?"
+                                                   icon="pi pi-exclamation-triangle" />
+                                    </p:commandButton>
+								</p:column>
+							</p:dataTable>
+							
+							<p:outputPanel layout="block" class="addProduct" style="margin-top: 16px;" rendered="#{saleController.validateStatus()}">
+								<div class="p-col-12 p-md-6">
+									<p:outputLabel for="product" value="Produto" />
+									<p:selectOneMenu id="product" value="#{saleController.product}" required="true" 
+													 disabled="#{saleController.isUpdate}">
+										<f:selectItem itemLabel="Selecione um produto" itemValue="#{null}" />
+										<f:selectItems value="#{saleController.products}" var="prod"
+											itemLabel="#{prod.name}" itemValue="#{prod}" />
+									</p:selectOneMenu>
+								</div>
+	
+								<div class="p-col-12 p-md-3">
+									<p:outputLabel for="quantity" value="Quantidade" />
+									<p:spinner style="max-width: 120px;" id="quantity" value="#{saleController.quantity}" min="1" required="true" />
+								</div>
+								
+								<div class="button-group p-col-12 p-md-3">
+									<p:commandButton value="Adicionar" icon="pi pi-plus"
+										action="#{saleController.addProduct}"
+										update="saleSection :sales:salesList"
+										process="@form"
+										style="font-size: 12px;" />
+									<p:commandButton value="Remover" icon="pi pi-minus"
+										class="ui-button-danger"
+										action="#{saleController.removeProduct}"
+										update="saleSection :sales:salesList"
+										process="@form" 
+										rendered="#{saleController.isUpdate}"
+										style="font-size: 12px;" />
+									<p:commandButton value="Cancelar" icon="pi pi-times"
+										class="ui-button-secondary"
+										action="#{saleController.cancelEdit}"
+										update="saleSection :sales:salesList"
+										process="@form" 
+										rendered="#{saleController.isUpdate}"
+										style="font-size: 12px;" />
+								</div>
+							</p:outputPanel>
+							
+							<hr style="width: 100%" />
+			        		
+			        		<div class="button-group">
+			                        <p:commandButton value="Finalizar" icon="pi pi-credit-card" action="#{saleController.finishSale}"
+			                                         update="saleSection :sales:salesList" process="@this" rendered="#{saleController.validateStatus()}" />
+			
+			                        <p:commandButton value="Cancelar" icon="pi pi-times" action="#{saleController.cancel}"
+			                                         immediate="true" styleClass="ui-button-secondary" 
+			                                         update="saleSection :sales:salesList" rendered="#{saleController.validateStatus()}">
+			                            <f:ajax render="newSale" resetValues="true"/>
+			                        </p:commandButton>
+			                        <p:commandButton value="Fechar" icon="pi pi-search" action="#{saleController.cancelAndRedirect}"
+			                                         process="@this" rendered="#{!saleController.validateStatus()}" styleClass="ui-button-secondary" />
+		                    </div>
+	        			</h:form>
+	        		</p:outputPanel>
+        		</div>
+        		<div class="ui-g-2"></div>
+        	</div>
+
+            <h3>Histórico de Vendas</h3>
+            <div class="ui-g">
+                <div class="ui-g-2"></div>
+                <div class="ui-g-8">
+                    <h:form id="sales">
+                        <p:growl id="growl" sticky="true" />
+
+                        <p:dataTable id="salesList" var="s" value="#{saleController.sales}"
+                        		emptyMessage="Nenhuma venda registrada.">
+                            <p:column headerText="ID">
+                                <h:outputText value="#{s.id}" />
+                            </p:column>
+                            
+                             <p:column headerText="Código">
+                                <h:outputText value="#{s.code}" />
+                            </p:column>
+
+                            <p:column headerText="Cliente">
+                                <h:outputText value="#{s.client.name}" />
+                            </p:column>
+
+                            <p:column headerText="Valor Total">
+                                <h:outputText value="#{s.totalValue}" />
+                            </p:column>
+                            
+                            <p:column headerText="Status">
+                                <h:outputText value="#{s.status}" />
+                            </p:column>
+
+                            <p:column headerText="Ações">
+                                <div class="button-group">
+                                    <p:commandButton icon="pi pi-shopping-cart"
+                                                     title="Finalizar Venda"
+                                                     action="#{saleController.edit(s)}"
+                                                     update="salesList saleSection"
+                                                     styleClass="ui-button-primary"
+                                                     process="@this"
+                                                     rendered="#{saleController.validateStatus(s.status)}" />
+
+                                    <p:commandButton icon="pi pi-search"
+                                                     title="Ver detalhes"
+                                                     action="#{saleController.edit(s)}"
+                                                     update="salesList saleSection"
+                                                     styleClass="ui-button-secondary"
+                                                     rendered="#{!saleController.validateStatus(s.status)}" />
+                                </div>
+                            </p:column>
+                        </p:dataTable>
+
+                        <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true" width="350">
+                            <p:commandButton value="Não" type="button" styleClass="ui-confirmdialog-no ui-button-flat" />
+                            <p:commandButton value="Sim" type="button" styleClass="ui-confirmdialog-yes" />
+                        </p:confirmDialog>
+                    </h:form>
+                </div>
+                <div class="ui-g-2"></div>
+            </div>
+        </p:outputPanel>
+    </h:body>
+</f:view>
+</html>

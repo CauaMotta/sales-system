@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>br.com.ocauamotta</groupId>
+  <artifactId>SalesSystem</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>war</packaging>
+
+  <name>SalesSystem Maven Webapp</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+  
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+    
+	<dependency>
+	    <groupId>jakarta.servlet</groupId>
+	    <artifactId>jakarta.servlet-api</artifactId>
+	    <version>6.1.0</version>
+	    <scope>provided</scope>
+	</dependency>
+	
+	<dependency>
+	    <groupId>jakarta.faces</groupId>
+	    <artifactId>jakarta.faces-api</artifactId>
+	    <version>4.0.1</version>
+	    <scope>provided</scope>
+	</dependency>
+
+	<dependency>
+	    <groupId>jakarta.enterprise</groupId>
+	    <artifactId>jakarta.enterprise.cdi-api</artifactId>
+	    <version>4.0.1</version>
+	    <scope>provided</scope>
+	</dependency>
+	
+	<dependency>
+	    <groupId>jakarta.inject</groupId>
+	    <artifactId>jakarta.inject-api</artifactId>
+	    <version>2.0.1</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>jakarta.ejb</groupId>
+	    <artifactId>jakarta.ejb-api</artifactId>
+	    <version>4.0.1</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>jakarta.persistence</groupId>
+	    <artifactId>jakarta.persistence-api</artifactId>
+	    <version>3.2.0</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>org.hibernate.orm</groupId>
+	    <artifactId>hibernate-core</artifactId>
+	    <version>7.0.6.Final</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>org.postgresql</groupId>
+	    <artifactId>postgresql</artifactId>
+	    <version>42.7.7</version>
+	</dependency>
+	
+	<dependency>
+	    <groupId>org.primefaces</groupId>
+	    <artifactId>primefaces</artifactId>
+	    <version>15.0.0</version>
+	    <classifier>jakarta</classifier>
+	</dependency>
+	
+	<dependency>
+	    <groupId>org.primefaces</groupId>
+	    <artifactId>primefaces-themes</artifactId>
+	    <version>15.0.6</version>
+	</dependency>
+		
+	<dependency>
+	    <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
+	    <artifactId>owasp-java-html-sanitizer</artifactId>
+	    <version>20211018.1</version>
+	</dependency>
+	
+  </dependencies>
+
+  <build>
+    <finalName>SalesSystem</finalName>
+    <pluginManagement>
+      <plugins>
+      
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.4.0</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.4.0</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>3.1.2</version>
+        </plugin>
+        
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>3.1.2</version>
+        </plugin>
+        
+        <plugin>
+      	  <groupId>org.wildfly.plugins</groupId>
+       	  <artifactId>wildfly-maven-plugin</artifactId>
+       	  <version>4.2.1.Final</version>
+      	</plugin>	
+        
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
