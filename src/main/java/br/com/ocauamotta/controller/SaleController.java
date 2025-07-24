@@ -135,8 +135,7 @@ public class SaleController implements Serializable {
 	public void finishSale() {
 		try {
 			if(!sale.getProducts().isEmpty()) {
-				sale.setStatus(Status.CONCLUIDA);
-				saleService.update(sale);
+				saleService.finishSale(sale);
 				reset();
 			}
 		} catch (Exception err) {
@@ -147,8 +146,7 @@ public class SaleController implements Serializable {
 	
 	public void cancel() {
 		try {
-			sale.setStatus(Status.CANCELADA);
-			saleService.update(sale);
+			saleService.cancelSale(sale);
 			reset();
 		} catch (Exception err) {
 			err.printStackTrace();
